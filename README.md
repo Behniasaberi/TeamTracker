@@ -6,6 +6,8 @@
 
 A Persian (RTL) task tracker for small teams. The team lead assigns tasks, members move cards on a kanban board, log their hours and tick a task when it's done. The lead then approves it — which locks it for good — or sends it back with a reason. Everything updates live for the whole team.
 
+**Live demo:** https://teamtracker-s465.onrender.com — log in as `peyman` / `1234` (team lead) or `behnia` / `1234` (member). It runs on a free instance, so the first load can take up to a minute; data resets every night.
+
 [نسخه‌ی فارسی](README.fa.md)
 
 ![Live demo: member ticks a task on the right, the lead approves it on the left](docs/demo.gif)
