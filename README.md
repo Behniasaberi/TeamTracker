@@ -1,6 +1,6 @@
 # TeamTracker
 
-[![CI](https://github.com/behniasaberi1999/TeamTracker/actions/workflows/ci.yml/badge.svg)](https://github.com/behniasaberi1999/TeamTracker/actions/workflows/ci.yml)
+[![CI](https://github.com/Behniasaberi/TeamTracker/actions/workflows/ci.yml/badge.svg)](https://github.com/Behniasaberi/TeamTracker/actions/workflows/ci.yml)
 ![.NET 8](https://img.shields.io/badge/.NET-8.0-512BD4)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
@@ -80,7 +80,7 @@ stateDiagram-v2
 Requires the [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0).
 
 ```bash
-git clone https://github.com/behniasaberi1999/TeamTracker.git
+git clone https://github.com/Behniasaberi/TeamTracker.git
 cd TeamTracker
 dotnet run --project TeamTracker.csproj
 ```
