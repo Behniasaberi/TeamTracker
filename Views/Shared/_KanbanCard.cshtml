@@ -1,0 +1,130 @@
+@model KanbanCardVm
+@{
+    var t = Model.Task;
+    var leader = Model.IsLeader;
+    var detailsUrl = leader
+        ? Url.Action("Details", "Leader", new { id = t.Id })
+        : Url.Action("Details", "Member", new { id = t.Id });
+    var due = Fa.Due(t, Model.Now.Date);
+    var cls = $"kcard prio-{t.Priority} st-{t.Status}"
+              + (t.IsLocked ? " locked" : "")
+              + (Model.CanDrag ? " can-drag" : "")
+              + (t.WasRejected ? " rejected" : "")
+              + (t.IsTimerRunning ? " running" : "")
+              + (due?.Cls is "late" or "today" ? " due-hot" : "");
+    var elapsed = t.IsTimerRunning ? Math.Max(0, (long)(Model.Now - t.TimerStartedAt!.Value).TotalSeconds) : 0;
+}
+
+<article class="@cls" data-id="@t.Id" data-title="@t.Title" data-status="@t.Status"
+         data-hours="@Ui.Inv(t.TotalHours)" data-logs="@t.WorkLogs.Count" data-assignee="@t.AssignedToId"
+         data-owner="@Model.OwnerName" data-note="@t.CompletionNote" data-days="@t.WorkedDays">
+    <div class="k-top">
+        @if (t.IsLocked)
+        {
+            <span class="tick on" title="تأیید و قفل شده">@Ui.Icon("check", 15)</span>
+        }
+        else if (t.Status == WorkStatus.Review)
+        {
+            if (leader)
+            {
+                <button type="button" class="tick wait js-approve" title="تأیید کن و قفل شود">@Ui.Icon("check", 15)</button>
+            }
+            else
+            {
+                <span class="tick wait" title="تیک خورده؛ منتظر تأیید تیم‌لید">@Ui.Icon("hourglass", 13)</span>
+            }
+        }
+        else if (!leader)
+        {
+            <button type="button" class="tick js-tick" title="تیک بزن: کار انجام شد">@Ui.Icon("check", 15)</button>
+        }
+        else
+        {
+            <span class="tick idle" title="هنوز تیک نخورده"></span>
+        }
+
+        <a class="k-title" href="@detailsUrl" draggable="false">@t.Title</a>
+
+        @if (Model.CanDrag)
+        {
+            <span class="k-handle" title="بکش و جابه‌جا کن">@Ui.Icon("drag", 16)</span>
+        }
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(t.Description))
+    {
+        <p class="k-desc">@t.Description</p>
+    }
+
+    @if (t.WasRejected)
+    {
+        <div class="k-callout">@Ui.Icon("undo", 14) <span><b>برگشت خورد:</b> @t.ReviewNote</span></div>
+    }
+
+    @if (t.Checklist.Count > 0)
+    {
+        <div class="k-check" title="چک‌لیست: @Fa.N(t.ChecklistDone) از @Fa.N(t.Checklist.Count)">
+            @Ui.Icon("list", 14)
+            <div class="bar"><span style="width:@(t.ChecklistPercent)%"></span></div>
+            <b>@Fa.N(t.ChecklistDone)/@Fa.N(t.Checklist.Count)</b>
+        </div>
+    }
+
+    <div class="k-meta">
+        <span class="pill @Fa.PriorityClass(t.Priority)">@Fa.Priority(t.Priority)</span>
+        @if (due is { } d)
+        {
+            <span class="due @d.Cls">@Ui.Icon("calendar", 13) @d.Text</span>
+        }
+        <span>@Ui.Icon("clock", 13) @Fa.HoursShort(t.TotalHours) · @Fa.N(t.WorkedDays) روز</span>
+        @if (t.Comments.Count > 0)
+        {
+            <span title="گفت‌وگو">@Ui.Icon("chat", 13) @Fa.N(t.Comments.Count)</span>
+        }
+    </div>
+
+    @if (t.IsTimerRunning)
+    {
+        <div class="k-timer" data-elapsed="@elapsed">
+            <i class="pulse"></i> @Ui.Icon("timer", 14)
+            <b class="js-clock">@Fa.N(TimeSpan.FromSeconds(elapsed).ToString(@"hh\:mm\:ss"))</b>
+            <span>@(leader ? "الان داره روش کار می‌کنه" : "تایمر روشنه")</span>
+        </div>
+    }
+
+    @if (Model.OwnerName is not null)
+    {
+        <div class="k-owner">@Ui.Avatar(Model.OwnerName, t.AssignedToId, "sm") @Model.OwnerName</div>
+    }
+
+    @if (!leader && t.IsOpen)
+    {
+        <div class="k-actions">
+            @if (t.IsTimerRunning)
+            {
+                <button type="button" class="btn btn-ghost btn-sm js-timer-stop timer-on" title="توقف و ثبت خودکار زمان">@Ui.Icon("stop", 14)<span class="t">توقف</span></button>
+            }
+            else
+            {
+                <button type="button" class="btn btn-ghost btn-sm js-timer-start" title="روشن کردن تایمر">@Ui.Icon("play", 14)<span class="t">تایمر</span></button>
+            }
+            <button type="button" class="btn btn-ghost btn-sm js-log">@Ui.Icon("clock", 14) ثبت ساعت</button>
+            <button type="button" class="btn btn-ghost btn-sm js-tick ok">@Ui.Icon("check", 14) انجام شد</button>
+        </div>
+    }
+    else if (leader && t.Status == WorkStatus.Review)
+    {
+        <div class="k-actions">
+            <button type="button" class="btn btn-ghost btn-sm js-reject">@Ui.Icon("undo", 14) برگردون</button>
+            <button type="button" class="btn btn-done btn-sm js-approve">@Ui.Icon("check", 14) تأیید</button>
+        </div>
+    }
+    else if (t.Status == WorkStatus.Review)
+    {
+        <div class="k-foot wait">@Ui.Icon("hourglass", 13) تیک زدی · منتظر تأیید تیم‌لید</div>
+    }
+    else if (t.IsLocked)
+    {
+        <div class="k-foot ok">@Ui.Icon("lock", 13) تأیید شده · @Fa.Stamp(t.CompletedAt)</div>
+    }
+</article>

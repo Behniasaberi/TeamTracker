@@ -1,0 +1,112 @@
+@model LeaderTaskDetailsVm
+@{
+    var t = Model.Task;
+    ViewData["Title"] = t.Title;
+    var who = Model.Assignee.FullName;
+}
+
+<a asp-action="Index" class="back-link">@Ui.Icon("back", 16) برگشت به داشبورد</a>
+
+<div class="row g-4">
+    <div class="col-lg-8 order-2 order-lg-1">
+        <div class="panel mb-4">
+            <div class="d-flex gap-3 align-items-start">
+                @if (t.IsLocked) { <span class="tick lg on">@Ui.Icon("check", 18)</span> }
+                else if (t.Status == WorkStatus.Review) { <span class="tick lg wait">@Ui.Icon("hourglass", 16)</span> }
+                else { <span class="tick lg idle"></span> }
+                <div class="flex-grow-1 min-w-0">
+                    <div class="d-flex flex-wrap gap-2 mb-2">
+                        <span class="pill @Fa.StatusClass(t.Status)"><span class="dot"></span>@Fa.Status(t.Status)</span>
+                        <span class="pill @Fa.PriorityClass(t.Priority)">@Ui.Icon("flag", 12) @Fa.Priority(t.Priority)</span>
+                        @if (t.IsLocked) { <span class="pill lock">@Ui.Icon("lock", 11) قفل</span> }
+                        @if (Fa.Due(t, DateTime.Today) is { } d && d.Cls != "ok") { <span class="pill due-pill @d.Cls">@d.Text</span> }
+                        @if (t.IsTimerRunning) { <span class="pill running"><i class="pulse"></i> @who الان داره روش کار می‌کنه</span> }
+                    </div>
+                    <h1 class="page-title">@t.Title</h1>
+                </div>
+                @if (!t.IsLocked)
+                {
+                    <div class="d-flex gap-2">
+                        <a asp-action="Edit" asp-route-id="@t.Id" class="btn btn-ghost btn-sm">@Ui.Icon("edit", 15) ویرایش</a>
+                        <form asp-action="Delete" asp-route-id="@t.Id" method="post" class="js-confirm-delete">
+                            <button class="btn btn-ghost danger btn-sm" title="حذف" aria-label="حذف">@Ui.Icon("trash", 15)</button>
+                        </form>
+                    </div>
+                }
+            </div>
+            @if (t.WasRejected)
+            {
+                <div class="k-callout mt-3">@Ui.Icon("undo", 15) <span><b>تو برگردوندی:</b> @t.ReviewNote</span></div>
+            }
+        </div>
+
+        <partial name="_Comments" model="(t, Model.Names, int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value))" />
+        <partial name="_TaskInfo" model="(t, false, Model.Names)" />
+    </div>
+
+    <div class="col-lg-4 order-1 order-lg-2">
+        <div class="sticky-side d-grid gap-3">
+            <div class="panel d-flex align-items-center gap-3">
+                @Ui.Avatar(who, Model.Assignee.Id, "lg")
+                <div>
+                    <div class="small text-muted">مسئول انجام</div>
+                    <a class="task-link" asp-action="Member" asp-route-id="@Model.Assignee.Id">@who</a>
+                    <div class="small text-muted">@Model.Assignee.JobTitle</div>
+                </div>
+            </div>
+
+            @if (t.IsLocked)
+            {
+                <div class="locked-banner">
+                    <span class="seal">@Ui.Icon("lock", 22)</span>
+                    <div>
+                        <div class="fw-bold">تأیید شد و قفل است</div>
+                        <div class="small text-muted">@Fa.Stamp(t.CompletedAt)</div>
+                        <div class="small mt-2">
+                            @who در مجموع <b>@Fa.N(t.WorkedDays) روز</b> و <b>@Fa.Hours(t.TotalHours)</b> روی این کار وقت گذاشته
+                            (از @Fa.Date(t.StartedAt) تا @Fa.Date(t.SubmittedAt)).
+                        </div>
+                        @if (!string.IsNullOrWhiteSpace(t.CompletionNote)) { <div class="note"><b>گزارش @who:</b> @t.CompletionNote</div> }
+                        @if (!string.IsNullOrWhiteSpace(t.ReviewNote)) { <div class="note"><b>پیام تو:</b> @t.ReviewNote</div> }
+                    </div>
+                </div>
+            }
+            else if (t.Status == WorkStatus.Review)
+            {
+                <div class="review-banner review-item" data-id="@t.Id" data-title="@t.Title" data-owner="@who"
+                     data-hours="@Ui.Inv(t.TotalHours)" data-days="@t.WorkedDays" data-note="@t.CompletionNote">
+                    <div class="d-flex gap-3">
+                        <span class="seal">@Ui.Icon("hourglass", 22)</span>
+                        <div>
+                            <div class="fw-bold">@who تیک زد؛ منتظر تأیید توئه</div>
+                            <div class="small text-muted">@Fa.Stamp(t.SubmittedAt)</div>
+                            <div class="small mt-2"><b>@Fa.Hours(t.TotalHours)</b> در <b>@Fa.N(t.WorkedDays) روز</b>
+                                @if (t.Checklist.Count > 0) { <text>· چک‌لیست @Fa.N(t.ChecklistDone) از @Fa.N(t.Checklist.Count)</text> }
+                            </div>
+                            @if (!string.IsNullOrWhiteSpace(t.CompletionNote)) { <div class="note"><b>گزارش:</b> @t.CompletionNote</div> }
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2 mt-3">
+                        <button type="button" class="btn btn-ghost flex-fill js-reject">@Ui.Icon("undo", 16) برگردون</button>
+                        <button type="button" class="btn btn-done flex-fill js-approve">@Ui.Icon("check", 16) تأیید و قفل</button>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="panel">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="ring" style="--p:@t.ChecklistPercent;--c:var(--brand)" data-label="@Fa.N(t.ChecklistPercent)٪" title="پیشرفت چک‌لیست"></div>
+                        <div>
+                            <div class="fw-bold">@Fa.Hours(t.TotalHours) تا الان</div>
+                            <div class="small text-muted">در @Fa.N(t.WorkedDays) روز کاری · هنوز تیک نخورده</div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Modals { <partial name="_LeaderModals" model="@("details")" /> }
+@section Scripts { <script src="~/js/board.js" asp-append-version="true"></script> }

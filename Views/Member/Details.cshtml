@@ -1,0 +1,107 @@
+@model MemberTaskVm
+@{
+    var t = Model.Task;
+    ViewData["Title"] = t.Title;
+    var elapsed = t.IsTimerRunning ? Math.Max(0, (long)(DateTime.Now - t.TimerStartedAt!.Value).TotalSeconds) : 0;
+}
+
+<a asp-action="Index" class="back-link">@Ui.Icon("back", 16) برگشت به برد</a>
+
+<div class="row g-4">
+    <div class="col-lg-8 order-2 order-lg-1">
+        <div class="panel mb-4 task-head" data-id="@t.Id" data-title="@t.Title" data-hours="@Ui.Inv(t.TotalHours)">
+            <div class="d-flex gap-3 align-items-start">
+                @if (t.IsLocked) { <span class="tick lg on">@Ui.Icon("check", 18)</span> }
+                else if (t.Status == WorkStatus.Review) { <span class="tick lg wait">@Ui.Icon("hourglass", 16)</span> }
+                else { <button type="button" class="tick lg js-tick" title="تیک بزن: انجام شد">@Ui.Icon("check", 18)</button> }
+                <div class="flex-grow-1 min-w-0">
+                    <div class="d-flex flex-wrap gap-2 mb-2">
+                        <span class="pill @Fa.StatusClass(t.Status)"><span class="dot"></span>@Fa.Status(t.Status)</span>
+                        <span class="pill @Fa.PriorityClass(t.Priority)">@Ui.Icon("flag", 12) @Fa.Priority(t.Priority)</span>
+                        @if (t.IsLocked) { <span class="pill lock">@Ui.Icon("lock", 11) قفل</span> }
+                        @if (Fa.Due(t, DateTime.Today) is { } d && d.Cls != "ok") { <span class="pill due-pill @d.Cls">@d.Text</span> }
+                    </div>
+                    <h1 class="page-title">@t.Title</h1>
+                </div>
+            </div>
+            @if (t.WasRejected)
+            {
+                <div class="k-callout mt-3">@Ui.Icon("undo", 15) <span><b>تیم‌لید برگردوند:</b> @t.ReviewNote</span></div>
+            }
+        </div>
+
+        <partial name="_Comments" model="(t, Model.Names, int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value))" />
+        <partial name="_TaskInfo" model="(t, t.IsOpen, Model.Names)" />
+    </div>
+
+    <div class="col-lg-4 order-1 order-lg-2">
+        <div class="sticky-side">
+            @if (t.IsLocked)
+            {
+                <div class="locked-banner stamp">
+                    <span class="seal">@Ui.Icon("lock", 22)</span>
+                    <div>
+                        <div class="fw-bold">تأیید شد و قفل است 🎉</div>
+                        <div class="small text-muted">@Fa.Stamp(t.CompletedAt)</div>
+                        <div class="small mt-2">@Fa.N(t.WorkedDays) روز کار · @Fa.Hours(t.TotalHours).</div>
+                        @if (!string.IsNullOrWhiteSpace(t.CompletionNote)) { <div class="note"><b>گزارش تو:</b> @t.CompletionNote</div> }
+                        @if (!string.IsNullOrWhiteSpace(t.ReviewNote)) { <div class="note"><b>پیام تیم‌لید:</b> @t.ReviewNote</div> }
+                    </div>
+                </div>
+            }
+            else if (t.Status == WorkStatus.Review)
+            {
+                <div class="review-banner">
+                    <div class="d-flex gap-3">
+                        <span class="seal">@Ui.Icon("hourglass", 22)</span>
+                        <div>
+                            <div class="fw-bold">تیک زدی؛ منتظر تأیید تیم‌لید</div>
+                            <div class="small text-muted">@Fa.Stamp(t.SubmittedAt)</div>
+                            <div class="small mt-2">@Fa.N(t.WorkedDays) روز کار · @Fa.Hours(t.TotalHours). تا وقتی بررسی بشه قابل تغییر نیست.</div>
+                            @if (!string.IsNullOrWhiteSpace(t.CompletionNote)) { <div class="note"><b>گزارش تو:</b> @t.CompletionNote</div> }
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="panel" data-id="@t.Id" data-title="@t.Title" data-hours="@Ui.Inv(t.TotalHours)">
+                    <div class="panel-title">@Ui.Icon("sparkle") کارهای این تسک</div>
+
+                    <div class="timer-box @(t.IsTimerRunning ? "on" : "")">
+                        @if (t.IsTimerRunning)
+                        {
+                            <div class="k-timer big" data-elapsed="@elapsed"><i class="pulse"></i> <b class="js-clock">@Fa.N(TimeSpan.FromSeconds(elapsed).ToString(@"hh\:mm\:ss"))</b></div>
+                            <button type="button" class="btn btn-ghost js-timer-stop timer-on w-100">@Ui.Icon("stop", 15) توقف و ثبت خودکار</button>
+                        }
+                        else
+                        {
+                            <div class="k-timer big idle"><b>@Fa.N("00:00:00")</b></div>
+                            <button type="button" class="btn btn-ghost js-timer-start w-100">@Ui.Icon("play", 15) روشن کردن تایمر</button>
+                        }
+                    </div>
+
+                    <div class="d-flex align-items-center gap-3 my-3">
+                        <div class="ring" style="--p:@t.ChecklistPercent;--c:var(--brand)" data-label="@Fa.N(t.ChecklistPercent)٪" title="پیشرفت چک‌لیست"></div>
+                        <div>
+                            <div class="fw-bold">@Fa.Hours(t.TotalHours)</div>
+                            <div class="small text-muted">در @Fa.N(t.WorkedDays) روز کاری</div>
+                        </div>
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button type="button" class="btn btn-ghost js-log">@Ui.Icon("clock", 16) ثبت دستی ساعت کار</button>
+                        <button type="button" class="btn btn-done js-tick">@Ui.Icon("check", 16) کار انجام شد — تیک بزن</button>
+                    </div>
+                    <div class="warn-note">@Ui.Icon("hourglass", 15) بعد از تیک، تسک برای تأیید تیم‌لید می‌ره.</div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Modals { <partial name="_MemberModals" model="@("details")" /> }
+
+@section Scripts {
+    <script src="~/js/jdate.js" asp-append-version="true"></script>
+    <script src="~/js/board.js" asp-append-version="true"></script>
+}

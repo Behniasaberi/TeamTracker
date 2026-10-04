@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: teamtracker
+    runtime: docker
+    plan: free
+    healthCheckPath: /Account/Login
+    envVars:
+      - key: Demo__DailyReset
+        value: "true"

@@ -1,0 +1,3 @@
+Microsoft SignalR JavaScript client (@microsoft/signalr 8.0.29)
+Copyright (c) .NET Foundation and Contributors
+Licensed under the MIT License.

@@ -1,0 +1,46 @@
+@model (TaskItem Task, Dictionary<int, string> Names, int Me)
+@{
+    var t = Model.Task;
+    var now = DateTime.Now;
+}
+
+<div class="panel mb-4" id="comments">
+    <div class="panel-title">@Ui.Icon("chat") گفت‌وگو
+        @if (t.Comments.Count > 0) { <span class="sub">@Fa.N(t.Comments.Count) پیام</span> }
+    </div>
+
+    @if (t.Comments.Count == 0)
+    {
+        <div class="empty sm">@Ui.Icon("chat", 28)<div>هنوز کسی چیزی ننوشته. سؤال یا نکته‌ای داری همین‌جا بنویس.</div></div>
+    }
+    else
+    {
+        <ul class="chat">
+            @foreach (var c in t.Comments.OrderBy(c => c.At))
+            {
+                var who = Model.Names.GetValueOrDefault(c.ByUserId, "؟");
+                var mine = c.ByUserId == Model.Me;
+                <li class="@(mine ? "mine" : "")">
+                    @Ui.Avatar(who, c.ByUserId, "sm")
+                    <div class="bubble">
+                        <div class="meta"><b>@(mine ? "تو" : who)</b> · <span title="@Fa.Stamp(c.At)">@Fa.Ago(c.At, now)</span></div>
+                        <div class="txt">@c.Text</div>
+                    </div>
+                </li>
+            }
+        </ul>
+    }
+
+    @if (!t.IsLocked)
+    {
+        <form class="chat-form js-ajax-form" method="post" asp-controller="Comments" asp-action="Add" asp-route-id="@t.Id" data-kind="commented">
+            @Html.AntiForgeryToken()
+            <textarea name="text" class="form-control" rows="1" maxlength="1000" required placeholder="بنویس… (Ctrl+Enter برای ارسال)"></textarea>
+            <button class="btn btn-brand" title="ارسال" aria-label="ارسال">@Ui.Icon("send", 16)</button>
+        </form>
+    }
+    else
+    {
+        <div class="small text-muted mt-2">@Ui.Icon("lock", 14) تسک قفل شده و گفت‌وگو بسته است.</div>
+    }
+</div>

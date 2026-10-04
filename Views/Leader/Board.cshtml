@@ -1,0 +1,25 @@
+@model BoardVm
+@{
+    ViewData["Title"] = "برد تیم";
+    var review = Model.Tasks.Count(t => t.Status == WorkStatus.Review);
+}
+
+<div class="page-head">
+    <div>
+        <h1 class="page-title">برد تیم</h1>
+        <div class="page-sub">
+            کارت‌ها رو بین ستون‌ها بکش. تیک رو اول خود عضو تیم می‌زنه، بعد تو تأیید می‌کنی تا قفل بشه.
+            @if (review > 0) { <b class="text-review">@Fa.N(review) تسک منتظر تأیید توئه.</b> }
+        </div>
+    </div>
+    <a asp-action="Create" asp-route-memberId="@Model.FilterMemberId" class="btn btn-brand">@Ui.Icon("plus", 16) تسک جدید</a>
+</div>
+
+<partial name="_Board" model="Model" />
+
+@section Modals { <partial name="_LeaderModals" model="@("board")" /> }
+
+@section Scripts {
+    <script src="~/lib/sortable/Sortable.min.js"></script>
+    <script src="~/js/board.js" asp-append-version="true"></script>
+}

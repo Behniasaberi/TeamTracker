@@ -1,0 +1,10 @@
+**/bin
+**/obj
+.vs
+.git
+.github
+App_Data
+TeamTracker.Tests
+docs
+*.zip
+*.md

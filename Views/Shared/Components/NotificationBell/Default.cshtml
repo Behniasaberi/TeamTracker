@@ -1,0 +1,53 @@
+@model NotificationsVm
+@{
+    static (string Icon, string Cls) Look(NotificationKind k) => k switch
+    {
+        NotificationKind.Assigned => ("plus", "brand"),
+        NotificationKind.Edited => ("edit", "brand"),
+        NotificationKind.Submitted => ("hourglass", "review"),
+        NotificationKind.Approved => ("check", "done"),
+        NotificationKind.Rejected => ("undo", "doing"),
+        NotificationKind.Commented => ("chat", "brand"),
+        _ => ("swap", "todo")
+    };
+}
+
+<div class="dropdown bell">
+    <button type="button" class="icon-btn" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false"
+            title="اعلان‌ها" aria-label="اعلان‌ها@(Model.Unread > 0 ? $"، {Model.Unread} خوانده‌نشده" : "")">
+        @Ui.Icon("bell", 17)
+        @if (Model.Unread > 0)
+        {
+            <span class="bell-badge">@Fa.N(Model.Unread > 9 ? "9+" : Model.Unread.ToString())</span>
+        }
+    </button>
+    <div class="dropdown-menu dropdown-menu-end bell-menu">
+        <div class="bell-head">
+            <b>اعلان‌ها</b>
+            @if (Model.Unread > 0)
+            {
+                <button type="button" class="link-btn js-read-all">همه رو خوندم</button>
+            }
+        </div>
+        @if (!Model.Items.Any())
+        {
+            <div class="empty sm">@Ui.Icon("bell", 28)<div>هنوز اعلانی نداری.</div></div>
+        }
+        else
+        {
+            <div class="bell-list">
+                @foreach (var n in Model.Items)
+                {
+                    var look = Look(n.Kind);
+                    <a class="bell-item @(n.IsRead ? "" : "unread")" asp-controller="Notifications" asp-action="Go" asp-route-id="@n.Id">
+                        <span class="bi-icon @look.Cls">@Ui.Icon(look.Icon, 14)</span>
+                        <span class="bi-body">
+                            <span class="bi-text">@n.Text</span>
+                            <small>@Fa.Ago(n.At, Model.Now)</small>
+                        </span>
+                    </a>
+                }
+            </div>
+        }
+    </div>
+</div>

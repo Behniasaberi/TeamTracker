@@ -1,0 +1,19 @@
+@model List<ActivityVm>
+
+@if (!Model.Any())
+{
+    <div class="empty">@Ui.Icon("activity", 36)<div>هنوز فعالیتی ثبت نشده.</div></div>
+}
+else
+{
+    <ul class="timeline">
+        @foreach (var a in Model)
+        {
+            <li class="@Fa.ActivityClass(a.Kind)">
+                <div class="small"><b>@a.Who</b> @a.Text</div>
+                <a class="t-task" asp-controller="Leader" asp-action="Details" asp-route-id="@a.TaskId">@a.TaskTitle</a>
+                <div class="when" title="@Fa.Stamp(a.When)">@Fa.Stamp(a.When)</div>
+            </li>
+        }
+    </ul>
+}

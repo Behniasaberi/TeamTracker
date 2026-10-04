@@ -1,0 +1,104 @@
+@model (TaskItem Task, bool CanCheck, Dictionary<int, string> Names)
+@{ var t = Model.Task; }
+
+<div class="panel mb-4">
+    @if (!string.IsNullOrWhiteSpace(t.Description))
+    {
+        <div class="panel-title">@Ui.Icon("note") توضیحات</div>
+        <p class="desc-text mb-4">@t.Description</p>
+    }
+
+    <div class="row g-3">
+        <div class="col-md-6">
+            <div class="rule-head c-done">
+                @Ui.Icon("list") چک‌لیست: چه کارهایی باید انجام شود
+                @if (t.Checklist.Count > 0) { <span class="ms-auto small fw-bold">@Fa.N(t.ChecklistDone)/@Fa.N(t.Checklist.Count)</span> }
+            </div>
+            @if (t.Checklist.Count > 0)
+            {
+                <div class="bar mb-2"><span style="width:@(t.ChecklistPercent)%"></span></div>
+                <ul class="checklist" data-id="@t.Id">
+                    @for (var i = 0; i < t.Checklist.Count; i++)
+                    {
+                        var c = t.Checklist[i];
+                        <li class="@(c.Done ? "done" : "")">
+                            <label>
+                                <input type="checkbox" class="js-check" data-index="@i" checked="@c.Done" disabled="@(!Model.CanCheck)" />
+                                <span class="box">@Ui.Icon("check", 13)</span>
+                                <span class="txt">@c.Text</span>
+                                @if (c.DoneAt is not null) { <small class="when">@Fa.Date(c.DoneAt)</small> }
+                            </label>
+                        </li>
+                    }
+                </ul>
+                @if (Model.CanCheck) { <div class="form-text">هر کاری که انجام دادی رو تیک بزن؛ تیم‌لید پیشرفتت رو می‌بینه.</div> }
+            }
+            else { <div class="text-muted small">موردی ثبت نشده</div> }
+        </div>
+        <div class="col-md-6">
+            <div class="rule-head c-danger">@Ui.Icon("x") چه کارهایی نباید انجام شود</div>
+            @if (t.DontList.Any())
+            {
+                <ul class="rule-list dont">@foreach (var d in t.DontList) { <li>@Ui.Icon("x", 16)<span>@d</span></li> }</ul>
+            }
+            else { <div class="text-muted small">موردی ثبت نشده</div> }
+        </div>
+    </div>
+</div>
+
+<div class="panel mb-4">
+    <div class="panel-title">@Ui.Icon("calendar") زمان‌بندی و کارکرد</div>
+    <div class="meta-grid">
+        <div><span>تاریخ ایجاد</span><b>@Fa.Date(t.CreatedAt)</b></div>
+        <div><span>مهلت</span><b class="@(t.IsOverdue ? "text-danger" : "")">@Fa.Date(t.Deadline)</b></div>
+        <div><span>شروع کار</span><b>@Fa.Date(t.StartedAt)</b></div>
+        <div><span>زمان تیک</span><b>@Fa.Stamp(t.SubmittedAt)</b></div>
+        <div><span>زمان تأیید</span><b>@Fa.Stamp(t.CompletedAt)</b></div>
+        <div><span>روزهای کاری</span><b>@Fa.N(t.WorkedDays) روز</b></div>
+        <div><span>مدت کل</span><b>@Fa.N(t.SpanDays) روز</b></div>
+        <div><span>مجموع ساعت</span><b>@Fa.Hours(t.TotalHours)</b></div>
+    </div>
+</div>
+
+<div class="panel mb-4">
+    <div class="panel-title">@Ui.Icon("clock") ساعت‌های ثبت‌شده</div>
+    @if (!t.WorkLogs.Any())
+    {
+        <div class="empty">@Ui.Icon("clock", 36)<div>هنوز ساعتی ثبت نشده.</div></div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table">
+                <thead><tr><th>تاریخ</th><th>مدت</th><th>شرح کار</th><th>زمان ثبت</th></tr></thead>
+                <tbody>
+                    @foreach (var l in t.WorkLogs.OrderBy(l => l.Date).ThenBy(l => l.LoggedAt))
+                    {
+                        <tr>
+                            <td class="fw-semibold text-nowrap">@Fa.Date(l.Date)</td>
+                            <td><span class="pill normal">@Fa.Hours(l.Hours)</span></td>
+                            <td class="small">@l.Note</td>
+                            <td class="small text-muted text-nowrap">@Fa.Stamp(l.LoggedAt)</td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot>
+                    <tr class="fw-bold"><td>جمع</td><td>@Fa.Hours(t.TotalHours)</td><td colspan="2" class="text-muted">در @Fa.N(t.WorkedDays) روز</td></tr>
+                </tfoot>
+            </table>
+        </div>
+    }
+</div>
+
+<div class="panel">
+    <div class="panel-title">@Ui.Icon("activity") تاریخچه‌ی تسک</div>
+    <ul class="timeline">
+        @foreach (var e in t.Events.OrderByDescending(e => e.At))
+        {
+            <li class="@Fa.ActivityClass(e.Kind)">
+                <div class="small"><b>@Model.Names.GetValueOrDefault(e.ByUserId, "؟")</b> @Fa.Activity(e)</div>
+                <div class="when">@Fa.Stamp(e.At)</div>
+            </li>
+        }
+    </ul>
+</div>

@@ -1,0 +1,89 @@
+@model TeamVm
+@{ ViewData["Title"] = "اعضای تیم"; }
+
+<div class="page-head">
+    <div>
+        <h1 class="page-title">اعضای تیم</h1>
+        <div class="page-sub">عضو جدید اضافه کن، اسم و سمت رو عوض کن یا رمز کسی رو که فراموشش کرده از نو بساز.</div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="d-grid gap-3">
+            @foreach (var row in Model.Members)
+            {
+                var m = row.User;
+                <div class="panel member-row">
+                    <div class="d-flex flex-wrap align-items-center gap-3">
+                        @Ui.Avatar(m.FullName, m.Id, "lg")
+                        <div class="flex-grow-1 min-w-0">
+                            <a class="task-link fs-6" asp-action="Member" asp-route-id="@m.Id">@m.FullName</a>
+                            <div class="small text-muted">@m.JobTitle · <span dir="ltr">@@@m.Username</span></div>
+                            <div class="small muted-2 mt-1">@Fa.N(row.OpenTasks) تسک باز از @Fa.N(row.TotalTasks)</div>
+                        </div>
+                        <button type="button" class="btn btn-ghost btn-sm" data-bs-toggle="collapse" data-bs-target="#edit-@m.Id" aria-expanded="false">
+                            @Ui.Icon("edit", 15) ویرایش
+                        </button>
+                        @if (row.TotalTasks == 0)
+                        {
+                            <form method="post" asp-action="RemoveMember" asp-route-id="@m.Id" class="js-confirm-delete" data-confirm="@m.FullName از تیم حذف شود؟">
+                                <button class="btn btn-ghost danger btn-sm" title="حذف از تیم" aria-label="حذف از تیم">@Ui.Icon("trash", 15)</button>
+                            </form>
+                        }
+                    </div>
+                    <div class="collapse" id="edit-@m.Id">
+                        <form method="post" asp-action="EditMember" asp-route-id="@m.Id" class="row g-3 pt-3 mt-3 border-top-dashed">
+                            <div class="col-sm-4">
+                                <label class="form-label">نام</label>
+                                <input name="FullName" class="form-control" value="@m.FullName" maxlength="40" required />
+                            </div>
+                            <div class="col-sm-4">
+                                <label class="form-label">سمت</label>
+                                <input name="JobTitle" class="form-control" value="@m.JobTitle" maxlength="40" />
+                            </div>
+                            <div class="col-sm-4">
+                                <label class="form-label">رمز جدید <span class="text-muted fw-normal">(اختیاری)</span></label>
+                                <input name="Password" type="password" class="form-control" dir="ltr" autocomplete="new-password" placeholder="خالی = بدون تغییر" />
+                            </div>
+                            <div class="col-12 d-flex justify-content-end">
+                                <button class="btn btn-brand btn-sm">@Ui.Icon("check", 15) ذخیره</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            }
+            @if (!Model.Members.Any())
+            {
+                <div class="panel empty">@Ui.Icon("users", 36)<div>هنوز عضوی نداری؛ از فرم کنار اضافه کن.</div></div>
+            }
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="panel sticky-side">
+            <div class="panel-title">@Ui.Icon("plus") عضو جدید</div>
+            <form method="post" asp-action="AddMember" class="d-grid gap-3">
+                <div>
+                    <label class="form-label">نام</label>
+                    <input name="NewMember.FullName" class="form-control" maxlength="40" required placeholder="مثلاً: سارا" />
+                </div>
+                <div>
+                    <label class="form-label">نام کاربری</label>
+                    <input name="NewMember.Username" class="form-control" dir="ltr" maxlength="20" required pattern="[A-Za-z0-9_.]{3,20}" placeholder="sara" autocomplete="off" />
+                    <div class="form-text">حروف انگلیسی، عدد، نقطه یا _ (۳ تا ۲۰ کاراکتر)</div>
+                </div>
+                <div>
+                    <label class="form-label">سمت</label>
+                    <input name="NewMember.JobTitle" class="form-control" maxlength="40" placeholder="عضو تیم" />
+                </div>
+                <div>
+                    <label class="form-label">رمز اولیه</label>
+                    <input name="NewMember.Password" type="password" class="form-control" dir="ltr" minlength="@UserService.MinPasswordLength" required autocomplete="new-password" />
+                    <div class="form-text">عضو بعداً از صفحه‌ی پروفایل خودش عوضش می‌کنه.</div>
+                </div>
+                <button class="btn btn-brand">@Ui.Icon("plus", 16) اضافه کن</button>
+            </form>
+        </div>
+    </div>
+</div>

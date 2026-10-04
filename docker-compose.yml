@@ -1,0 +1,13 @@
+services:
+  teamtracker:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - teamtracker-data:/app/App_Data
+    environment:
+      # برای استفاده‌ی واقعی (نه دمو) خاموشش کن تا داده‌ها هر شب پاک نشوند
+      Demo__DailyReset: "true"
+
+volumes:
+  teamtracker-data:

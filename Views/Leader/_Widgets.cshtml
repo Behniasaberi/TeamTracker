@@ -1,0 +1,82 @@
+@model LeaderDashboardVm
+@* ویجت‌های داشبورد تیم‌لید: نقشه‌ی فعالیت، ساعت هفتگی و وضعیت امروز *@
+@{
+    static int Level(double h) => h <= 0 ? 0 : h <= 2 ? 1 : h <= 4 ? 2 : h <= 6 ? 3 : 4;
+    var weeks = (int)Math.Ceiling(Model.Members.FirstOrDefault()?.Heat.Count / 7.0 ?? 0);
+    var maxWeek = Math.Max(1, Model.Members.Select(m => Math.Max(m.WeekHours, m.LastWeekHours)).DefaultIfEmpty(0).Max());
+}
+
+<div class="row g-4 mb-4">
+    <div class="col-xl-8">
+        <div class="panel h-100">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                <div class="panel-title m-0">@Ui.Icon("activity") نقشه‌ی فعالیت <span class="sub">ساعت کار روزانه · ۶ هفته‌ی اخیر</span></div>
+                <div class="heat-legend" aria-hidden="true">
+                    کم <i class="l0"></i><i class="l1"></i><i class="l2"></i><i class="l3"></i><i class="l4"></i> زیاد
+                </div>
+            </div>
+            <div class="heat-scroll">
+                <table class="heat" aria-label="ساعت کار روزانه‌ی هر نفر">
+                    <thead>
+                        <tr>
+                            <th></th>
+                            @for (var w = 0; w < weeks; w++)
+                            {
+                                <th colspan="7" class="wk">@Fa.DayMonth(Model.HeatFrom.AddDays(w * 7))</th>
+                            }
+                            <th class="sum">جمع</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var m in Model.Members)
+                        {
+                            <tr>
+                                <th class="who">@Ui.Avatar(m.Member.FullName, m.Member.Id, "sm") <span>@m.Member.FullName</span></th>
+                                @for (var i = 0; i < m.Heat.Count; i++)
+                                {
+                                    var day = Model.HeatFrom.AddDays(i);
+                                    var h = m.Heat[i];
+                                    var tip = $"{m.Member.FullName} · {Fa.DayMonth(day)} · {(h > 0 ? Fa.Hours(h) : "بدون ثبت ساعت")}";
+                                    <td class="@(i % 7 == 0 ? "ws" : "")"><i class="l@(Level(h)) @(day == Model.Today ? "today" : "")" data-tip="@tip" tabindex="0" aria-label="@tip"></i></td>
+                                }
+                                @for (var i = m.Heat.Count; i < weeks * 7; i++) { <td class="@(i % 7 == 0 ? "ws" : "")"><i class="future"></i></td> }
+                                <td class="sum">@Fa.N(Math.Round(m.Heat.Sum(), 1))</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-4">
+        <div class="panel h-100">
+            <div class="panel-title">@Ui.Icon("chart") ساعت این هفته <span class="sub">از شنبه</span></div>
+            <ul class="week-bars">
+                @foreach (var m in Model.Members.OrderByDescending(m => m.WeekHours))
+                {
+                    var delta = Math.Round(m.WeekHours - m.LastWeekHours, 1);
+                    var tip = $"{m.Member.FullName}: این هفته {Fa.Hours(m.WeekHours)} · هفته‌ی قبل {Fa.Hours(m.LastWeekHours)}";
+                    <li data-tip="@tip" tabindex="0">
+                        <div class="wb-head">
+                            <span class="d-flex align-items-center gap-2">@Ui.Avatar(m.Member.FullName, m.Member.Id, "sm") @m.Member.FullName</span>
+                            <b>@Fa.N(Math.Round(m.WeekHours, 1)) <small>ساعت</small></b>
+                        </div>
+                        <div class="wb-track">
+                            <span class="wb-fill" style="width:@Ui.Inv(Math.Round(m.WeekHours / maxWeek * 100, 1))%"></span>
+                            @if (m.LastWeekHours > 0)
+                            {
+                                <span class="wb-prev" style="inset-inline-start:@Ui.Inv(Math.Round(m.LastWeekHours / maxWeek * 100, 1))%" title="هفته‌ی قبل"></span>
+                            }
+                        </div>
+                        <div class="wb-delta @(delta > 0 ? "up" : delta < 0 ? "down" : "")">
+                            @if (delta == 0) { <text>مثل هفته‌ی قبل</text> }
+                            else { <text>@(delta > 0 ? "▲" : "▼") @Fa.N(Math.Abs(delta)) ساعت نسبت به هفته‌ی قبل (@Fa.N(Math.Round(m.LastWeekHours, 1)))</text> }
+                        </div>
+                    </li>
+                }
+            </ul>
+            <div class="wb-legend"><span><i class="fill"></i> این هفته</span><span><i class="prev"></i> هفته‌ی قبل</span></div>
+        </div>
+    </div>
+</div>

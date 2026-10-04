@@ -1,0 +1,45 @@
+@model BoardVm
+@* برد کانبان مشترک بین تیم‌لید و عضو تیم. قوانین درگ در wwwroot/js/board.js و سمت سرور در TaskService است. *@
+
+@if (Model.Mode == BoardMode.Leader)
+{
+    <div class="chips drop-chips mb-3" aria-label="فیلتر اعضا — کارت را روی آواتار بکش تا به آن نفر سپرده شود">
+        <a asp-action="Board" class="all @(Model.FilterMemberId is null ? "active" : "")">همه</a>
+        @foreach (var m in Model.Members)
+        {
+            <a asp-action="Board" asp-route-memberId="@m.Id" data-member="@m.Id" data-name="@m.FullName"
+               class="@(Model.FilterMemberId == m.Id ? "active" : "")">
+                @Ui.Avatar(m.FullName, m.Id, "sm") @m.FullName
+                <span class="cnt">@Fa.N(Model.Tasks.Count(t => t.AssignedToId == m.Id && !t.IsLocked))</span>
+            </a>
+        }
+        <span class="chips-hint">@Ui.Icon("swap", 14) کارت رو روی اسم یک نفر بنداز تا بهش سپرده بشه</span>
+    </div>
+}
+
+<div class="board" data-mode="@(Model.Mode == BoardMode.Leader ? "leader" : "member")">
+    @foreach (var c in Model.Columns)
+    {
+        var items = Model.Tasks.Where(t => t.Status == c.Status).ToList();
+        <section class="col" data-status="@c.Status">
+            <div class="col-head">
+                <span class="dot"></span> @c.Title
+                @if (c.Hint != "") { <span class="hint">@c.Hint</span> }
+                <span class="count">@Fa.N(items.Count)</span>
+            </div>
+            <div class="col-body">
+                <div class="col-empty">@c.Empty</div>
+                @foreach (var t in items)
+                {
+                    <partial name="_KanbanCard" model="new KanbanCardVm
+                    {
+                        Task = t,
+                        Mode = Model.Mode,
+                        Now = Model.Now,
+                        OwnerName = Model.Mode == BoardMode.Leader ? Model.Names.GetValueOrDefault(t.AssignedToId) : null
+                    }" />
+                }
+            </div>
+        </section>
+    }
+</div>

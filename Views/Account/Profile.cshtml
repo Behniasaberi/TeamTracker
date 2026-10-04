@@ -1,0 +1,58 @@
+@model ProfileVm
+@{
+    ViewData["Title"] = "پروفایل من";
+    var u = Model.User;
+}
+
+<div class="page-head">
+    <div>
+        <h1 class="page-title">پروفایل من</h1>
+        <div class="page-sub">اسمی که بقیه‌ی تیم می‌بینن و رمز ورودت.</div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-4">
+        <div class="panel text-center profile-card">
+            @Ui.Avatar(u.FullName, u.Id, "xl")
+            <h2 class="h5 fw-bold mt-3 mb-1">@u.FullName</h2>
+            <div class="text-muted small">@u.JobTitle</div>
+            <div class="meta-grid mt-3 text-start">
+                <div><span>نام کاربری</span><b dir="ltr">@u.Username</b></div>
+                <div><span>نقش</span><b>@(u.Role == Roles.Leader ? "تیم‌لید" : "عضو تیم")</b></div>
+                @if (Model.LeaderName is not null) { <div><span>تیم‌لید</span><b>@Model.LeaderName</b></div> }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8 d-grid gap-4 align-content-start">
+        <div class="panel">
+            <div class="panel-title">@Ui.Icon("user") نام نمایشی</div>
+            <form method="post" asp-action="Profile" class="d-flex flex-wrap gap-2">
+                <input name="fullName" class="form-control flex-grow-1 w-auto" value="@u.FullName" maxlength="40" required />
+                <button class="btn btn-brand">@Ui.Icon("check", 16) ذخیره</button>
+            </form>
+        </div>
+
+        <div class="panel">
+            <div class="panel-title">@Ui.Icon("key") تغییر رمز</div>
+            <form method="post" asp-action="ChangePassword" class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">رمز فعلی</label>
+                    <input name="current" type="password" class="form-control" dir="ltr" required autocomplete="current-password" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">رمز جدید</label>
+                    <input name="next" type="password" class="form-control" dir="ltr" required minlength="@UserService.MinPasswordLength" autocomplete="new-password" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">تکرار رمز جدید</label>
+                    <input name="repeat" type="password" class="form-control" dir="ltr" required minlength="@UserService.MinPasswordLength" autocomplete="new-password" />
+                </div>
+                <div class="col-12 d-flex justify-content-end">
+                    <button class="btn btn-brand">@Ui.Icon("key", 16) عوض کن</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

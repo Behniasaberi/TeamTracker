@@ -1,0 +1,56 @@
+@model string
+@* Model = returnTo ("board" ، "index" یا "details") *@
+
+<!-- مودال تأیید نهایی -->
+<div class="modal fade" id="approveModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content js-ajax-form" method="post" id="approveForm" data-kind="approved">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="returnTo" value="@Model" />
+            <div class="modal-header">
+                <span class="modal-icon ok">@Ui.Icon("lock", 22)</span>
+                <div>
+                    <h5 class="modal-title fw-bold m-0">تأیید و قفل</h5>
+                    <div class="small text-muted js-task-title"></div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="بستن"></button>
+            </div>
+            <div class="modal-body">
+                <div class="review-summary js-summary"></div>
+                <label class="form-label">پیام برای عضو تیم <span class="text-muted fw-normal">(اختیاری)</span></label>
+                <input name="note" class="form-control" maxlength="300" placeholder="مثلاً: عالی بود 👌" />
+                <div class="warn-note">@Ui.Icon("lock", 16) بعد از تأیید، تسک برای همیشه قفل می‌شه و دیگه قابل تغییر یا حذف نیست.</div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-ghost" data-bs-dismiss="modal">انصراف</button>
+                <button class="btn btn-done">@Ui.Icon("check", 16) تأیید کن</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- مودال برگرداندن -->
+<div class="modal fade" id="rejectModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content js-ajax-form" method="post" id="rejectForm" data-kind="rejected">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="returnTo" value="@Model" />
+            <div class="modal-header">
+                <span class="modal-icon warn">@Ui.Icon("undo", 22)</span>
+                <div>
+                    <h5 class="modal-title fw-bold m-0">برگردوندن برای اصلاح</h5>
+                    <div class="small text-muted js-task-title"></div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="بستن"></button>
+            </div>
+            <div class="modal-body">
+                <label class="form-label">چی رو باید درست کنه؟</label>
+                <textarea name="reason" class="form-control" rows="3" maxlength="500" required placeholder="دلیل برگشت رو بنویس؛ روی کارت عضو تیم نمایش داده می‌شه"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-ghost" data-bs-dismiss="modal">انصراف</button>
+                <button class="btn btn-warn">@Ui.Icon("undo", 16) برگردون</button>
+            </div>
+        </form>
+    </div>
+</div>

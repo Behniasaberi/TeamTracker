@@ -1,0 +1,94 @@
+@model TaskFormVm
+@{ ViewData["Title"] = Model.IsEdit ? "ویرایش تسک" : "تسک جدید"; }
+
+<a asp-action="Index" class="back-link">@Ui.Icon("back", 16) برگشت به داشبورد</a>
+
+<div class="page-head">
+    <div>
+        <h1 class="page-title">@ViewData["Title"]</h1>
+        <div class="page-sub">
+            @(Model.IsEdit ? "تا وقتی تسک تأیید و قفل نشده، می‌توانید ویرایشش کنید. تیک موارد چک‌لیستی که متنشان عوض نشود حفظ می‌شود." : "اگر چند نفر را انتخاب کنید، برای هر نفر یک تسک جدا ساخته می‌شود تا تیک و ساعت هر شخص جدا ثبت شود.")
+        </div>
+    </div>
+</div>
+
+<form method="post" asp-action="@(Model.IsEdit ? "Edit" : "Create")" asp-route-id="@Model.Id">
+    <div asp-validation-summary="ModelOnly" class="text-danger small mb-2"></div>
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="panel mb-4">
+                <div class="mb-3">
+                    <label asp-for="Title" class="form-label"></label>
+                    <input asp-for="Title" class="form-control form-control-lg" placeholder="مثلاً: پیاده‌سازی صفحه‌ی پروفایل" />
+                    <span asp-validation-for="Title" class="text-danger small"></span>
+                </div>
+                <div>
+                    <label asp-for="Description" class="form-label"></label>
+                    <textarea asp-for="Description" class="form-control" rows="3" placeholder="شرح کلی کار و هدف آن"></textarea>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label asp-for="Dos" class="form-label c-done">@Ui.Icon("list", 16) چک‌لیست: باید انجام شود</label>
+                        <textarea asp-for="Dos" class="form-control" rows="6" placeholder="هر مورد در یک خط — عضو تیم تک‌تک تیکشان می‌زند"></textarea>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="Donts" class="form-label c-danger">@Ui.Icon("x", 16) نباید انجام شود</label>
+                        <textarea asp-for="Donts" class="form-control" rows="6" placeholder="هر مورد در یک خط"></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="panel mb-4">
+                <label class="form-label">@(Model.IsEdit ? "مسئول انجام" : "واگذار به (یک یا چند نفر)")</label>
+                @if (Model.IsEdit)
+                {
+                    var who = Model.AvailableMembers.FirstOrDefault(m => Model.AssigneeIds.Contains(m.Id));
+                    <div class="d-flex align-items-center gap-2 p-2">@if (who is not null) { @Ui.Avatar(who.FullName, who.Id) <b>@who.FullName</b> }</div>
+                    <div class="form-text">برای سپردن به نفر دیگه، توی «برد تیم» کارت رو روی اسمش بنداز.</div>
+                }
+                else
+                {
+                    <div class="member-select" style="grid-template-columns:1fr">
+                        @foreach (var m in Model.AvailableMembers)
+                        {
+                            <label>
+                                <input type="checkbox" name="AssigneeIds" value="@m.Id" checked="@Model.AssigneeIds.Contains(m.Id)" />
+                                @Ui.Avatar(m.FullName, m.Id)
+                                <span><b class="d-block" style="font-size:.9rem">@m.FullName</b><small class="text-muted">@m.JobTitle</small></span>
+                                <span class="chk">@Ui.Icon("check", 14)</span>
+                            </label>
+                        }
+                    </div>
+                    <span asp-validation-for="AssigneeIds" class="text-danger small"></span>
+                }
+            </div>
+
+            <div class="panel mb-4">
+                <label class="form-label">اولویت</label>
+                <div class="prio-select mb-3">
+                    @foreach (var p in Enum.GetValues<TaskPriority>())
+                    {
+                        <label class="p-@p"><input type="radio" name="Priority" value="@p" checked="@(Model.Priority == p)" />@Fa.Priority(p)</label>
+                    }
+                </div>
+                <label asp-for="Deadline" class="form-label"></label>
+                <input asp-for="Deadline" type="date" data-jalali data-optional class="form-control" min="@DateTime.Today.ToString("yyyy-MM-dd")" />
+            </div>
+
+            <div class="d-grid gap-2">
+                <button class="btn btn-brand btn-lg">@Ui.Icon("check", 18) @(Model.IsEdit ? "ذخیره‌ی تغییرات" : "ثبت تسک")</button>
+                <a asp-action="Index" class="btn btn-ghost">انصراف</a>
+            </div>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/jdate.js" asp-append-version="true"></script>
+}

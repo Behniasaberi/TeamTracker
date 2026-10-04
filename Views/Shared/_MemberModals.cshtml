@@ -1,0 +1,90 @@
+@model string
+@* Model = returnTo ("board" یا "details"). فرم‌ها با fetch ارسال می‌شوند (board.js) و بدون جاوااسکریپت هم کار می‌کنند. *@
+@{ var today = DateTime.Today.ToString("yyyy-MM-dd"); }
+
+<!-- مودال ثبت ساعت -->
+<div class="modal fade" id="logModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content js-ajax-form" method="post" id="logForm" data-kind="log">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="returnTo" value="@Model" />
+            <div class="modal-header">
+                <span class="modal-icon brand">@Ui.Icon("clock", 22)</span>
+                <div>
+                    <h5 class="modal-title fw-bold m-0">ثبت ساعت کار</h5>
+                    <div class="small text-muted js-task-title"></div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="بستن"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-sm-6">
+                        <label class="form-label">تاریخ</label>
+                        <input type="date" data-jalali name="NewLog.Date" class="form-control" value="@today" max="@today" required />
+                        <div class="quick-hours js-quick-date">
+                            <button type="button" data-d="0">امروز</button><button type="button" data-d="-1">دیروز</button>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <label class="form-label">چند ساعت؟</label>
+                        <input type="number" name="NewLog.Hours" class="form-control js-hours" step="0.25" min="0.25" max="24" placeholder="مثلاً 2.5" required />
+                        <div class="quick-hours">
+                            <button type="button" data-h="0.5">۳۰ دقیقه</button><button type="button" data-h="1">۱</button><button type="button" data-h="2">۲</button>
+                            <button type="button" data-h="4">۴</button><button type="button" data-h="8">۸</button>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">چه کاری انجام دادی؟</label>
+                        <input name="NewLog.Note" class="form-control" maxlength="300" placeholder="خلاصه‌ی کار" />
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-ghost" data-bs-dismiss="modal">انصراف</button>
+                <button class="btn btn-brand">@Ui.Icon("check", 16) ثبت ساعت</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- مودال تیک انجام شد -->
+<div class="modal fade" id="doneModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content js-ajax-form" method="post" id="doneForm" data-kind="submitted">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="returnTo" value="@Model" />
+            <div class="modal-header">
+                <span class="modal-icon ok">@Ui.Icon("check", 24)</span>
+                <div>
+                    <h5 class="modal-title fw-bold m-0">کار انجام شد؟</h5>
+                    <div class="small text-muted js-task-title"></div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="بستن"></button>
+            </div>
+            <div class="modal-body">
+                <div class="small mb-3 js-hours-info"></div>
+                <div class="mb-3">
+                    <label class="form-label js-today-label">ساعت کار امروز <span class="text-muted fw-normal">(اختیاری)</span></label>
+                    <input type="number" name="Complete.TodayHours" class="form-control js-hours" step="0.25" min="0" max="24" placeholder="اگر امروز ساعتی ثبت نکردی" />
+                    <div class="quick-hours">
+                        <button type="button" data-h="1">۱</button><button type="button" data-h="2">۲</button>
+                        <button type="button" data-h="4">۴</button><button type="button" data-h="8">۸</button>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">گزارش پایانی برای تیم‌لید</label>
+                    <textarea name="Complete.Note" class="form-control" rows="2" maxlength="1000" placeholder="چه کاری انجام شد؟ نکته‌ای هست؟"></textarea>
+                </div>
+                <label class="confirm-check">
+                    <input type="checkbox" name="Complete.Confirm" value="true" class="js-confirm" />
+                    تأیید می‌کنم این کار کامل انجام شد
+                </label>
+                <div class="warn-note">@Ui.Icon("hourglass", 16) تسک برای تأیید تیم‌لید فرستاده می‌شه و تا وقتی بررسی بشه دیگه قابل تغییر نیست. اگه تأیید بشه، برای همیشه قفل می‌شه.</div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-ghost" data-bs-dismiss="modal">هنوز نه</button>
+                <button class="btn btn-done js-done-submit" disabled>@Ui.Icon("check", 16) تیک بزن و بفرست</button>
+            </div>
+        </form>
+    </div>
+</div>

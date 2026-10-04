@@ -1,0 +1,103 @@
+@model LeaderDashboardVm
+@{
+    var s = (MemberSummaryVm)ViewBag.Summary;
+    ViewData["Title"] = s.Member.FullName;
+    var logs = Model.Tasks.SelectMany(t => t.WorkLogs.Select(l => (Task: t, Log: l)))
+                          .OrderByDescending(x => x.Log.Date).ThenByDescending(x => x.Log.LoggedAt).ToList();
+    static int Level(double h) => h <= 0 ? 0 : h <= 2 ? 1 : h <= 4 ? 2 : h <= 6 ? 3 : 4;
+}
+
+<a asp-action="Index" class="back-link">@Ui.Icon("back", 16) برگشت به داشبورد</a>
+
+<div class="panel mb-4 d-flex flex-wrap align-items-center gap-3">
+    @Ui.Avatar(s.Member.FullName, s.Member.Id, "lg")
+    <div class="flex-grow-1">
+        <h1 class="page-title">@s.Member.FullName</h1>
+        <div class="page-sub m-0">@s.Member.JobTitle · آخرین فعالیت: @Fa.Ago(s.LastActivity, Model.Now)</div>
+        @if (s.RunningTask is not null)
+        {
+            <div class="small now-working mt-1" data-elapsed="@s.RunningSeconds">
+                <i class="pulse"></i> الان روی «@s.RunningTask.Title» · <b class="js-clock">@Fa.N(TimeSpan.FromSeconds(s.RunningSeconds).ToString(@"hh\:mm\:ss"))</b>
+            </div>
+        }
+    </div>
+    <div class="ring" style="--p:@s.Percent" data-label="@Fa.N(s.Percent)٪" title="درصد تسک‌های تأییدشده"></div>
+    <div class="d-flex gap-2">
+        <button type="button" class="btn btn-ghost" data-bs-toggle="modal" data-bs-target="#exportModal" title="خروجی اکسل">@Ui.Icon("download", 16) اکسل</button>
+        <a asp-action="Board" asp-route-memberId="@s.Member.Id" class="btn btn-ghost">@Ui.Icon("board", 16) برد</a>
+        <a asp-action="Create" asp-route-memberId="@s.Member.Id" class="btn btn-brand">@Ui.Icon("plus", 16) تسک جدید</a>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3"><div class="stat ok"><span class="chip">@Ui.Icon("check", 20)</span><div class="label">تأیید شده</div><div class="value">@Fa.N(s.Done) <small>از @Fa.N(s.Total)</small></div></div></div>
+    <div class="col-6 col-lg-3"><div class="stat brand"><span class="chip">@Ui.Icon("calendar", 20)</span><div class="label">روزهای کاری</div><div class="value">@Fa.N(s.WorkedDays) <small>روز</small></div></div></div>
+    <div class="col-6 col-lg-3"><div class="stat warn"><span class="chip">@Ui.Icon("clock", 20)</span><div class="label">ساعت این هفته</div><div class="value">@Fa.N(Math.Round(s.WeekHours, 1)) <small>کل @Fa.N(Math.Round(s.TotalHours, 1))</small></div></div></div>
+    <div class="col-6 col-lg-3"><div class="stat danger"><span class="chip">@Ui.Icon("alert", 20)</span><div class="label">عقب‌افتاده</div><div class="value">@Fa.N(s.Overdue)</div></div></div>
+</div>
+
+<div class="panel mb-4">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+        <div class="panel-title m-0">@Ui.Icon("activity") نقشه‌ی فعالیت <span class="sub">۶ هفته‌ی اخیر</span></div>
+        <div class="heat-legend" aria-hidden="true">کم <i class="l0"></i><i class="l1"></i><i class="l2"></i><i class="l3"></i><i class="l4"></i> زیاد</div>
+    </div>
+    <div class="heat-weeks">
+        @for (var w = 0; w * 7 < s.Heat.Count; w++)
+        {
+            <div class="hw">
+                <div class="hw-label">@Fa.DayMonth(Model.HeatFrom.AddDays(w * 7))</div>
+                <div class="hw-days">
+                    @for (var d = 0; d < 7; d++)
+                    {
+                        var i = w * 7 + d;
+                        if (i < s.Heat.Count)
+                        {
+                            var day = Model.HeatFrom.AddDays(i);
+                            var tip = $"{Fa.DayMonth(day)} · {(s.Heat[i] > 0 ? Fa.Hours(s.Heat[i]) : "بدون ثبت ساعت")}";
+                            <i class="l@(Level(s.Heat[i])) @(day == Model.Today ? "today" : "")" data-tip="@tip" tabindex="0" aria-label="@tip"></i>
+                        }
+                        else { <i class="future"></i> }
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-xl-7">
+        <div class="panel h-100">
+            <div class="panel-title">@Ui.Icon("grid") تسک‌های @s.Member.FullName</div>
+            <partial name="_TaskTable" model="Model" />
+        </div>
+    </div>
+    <div class="col-xl-5">
+        <div class="panel h-100">
+            <div class="panel-title">@Ui.Icon("clock") ریز ساعت‌های ثبت‌شده</div>
+            @if (!logs.Any())
+            {
+                <div class="empty">@Ui.Icon("clock", 36)<div>هنوز ساعتی ثبت نشده.</div></div>
+            }
+            else
+            {
+                <ul class="timeline">
+                    @foreach (var x in logs.Take(25))
+                    {
+                        <li>
+                            <div class="small"><b>@Fa.Hours(x.Log.Hours)</b> — @x.Log.Note</div>
+                            <a class="t-task" asp-action="Details" asp-route-id="@x.Task.Id">@x.Task.Title</a>
+                            <div class="when">@Fa.Date(x.Log.Date)</div>
+                        </li>
+                    }
+                </ul>
+            }
+        </div>
+    </div>
+</div>
+
+@section Modals { <partial name="_ExportModal" model="(Model.Members.Select(m => m.Member).ToList(), (int?)s.Member.Id)" /> }
+
+@section Scripts {
+    <script src="~/js/jdate.js" asp-append-version="true"></script>
+    <script src="~/js/board.js" asp-append-version="true"></script>
+}

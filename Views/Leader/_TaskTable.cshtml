@@ -1,0 +1,46 @@
+@model LeaderDashboardVm
+
+@if (!Model.Tasks.Any())
+{
+    <div class="empty">@Ui.Icon("board", 36)<div>تسکی پیدا نشد.</div></div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr><th style="width:40px"></th><th>تسک</th><th>مسئول</th><th>وضعیت</th><th>مهلت</th><th>کارکرد</th><th>تأیید</th></tr>
+            </thead>
+            <tbody>
+                @foreach (var t in Model.Tasks)
+                {
+                    var name = Model.MemberNames.GetValueOrDefault(t.AssignedToId, "؟");
+                    var due = Fa.Due(t, Model.Today);
+                    <tr>
+                        <td>
+                            @if (t.IsLocked) { <span class="tick on" title="تأیید و قفل">@Ui.Icon("check", 14)</span> }
+                            else if (t.Status == WorkStatus.Review) { <span class="tick wait" title="منتظر تأیید">@Ui.Icon("hourglass", 12)</span> }
+                            else { <span class="tick idle" title="هنوز تیک نخورده"></span> }
+                        </td>
+                        <td>
+                            <a class="task-link" asp-controller="Leader" asp-action="Details" asp-route-id="@t.Id">@t.Title</a>
+                            <div class="d-flex flex-wrap gap-1 mt-1">
+                                <span class="pill @Fa.PriorityClass(t.Priority)">@Fa.Priority(t.Priority)</span>
+                                @if (t.IsTimerRunning) { <span class="pill running"><i class="pulse"></i> در حال کار</span> }
+                                @if (t.WasRejected) { <span class="pill rejected">برگشت خورده</span> }
+                            </div>
+                        </td>
+                        <td><div class="d-flex align-items-center gap-2 small text-nowrap">@Ui.Avatar(name, t.AssignedToId, "sm") @name</div></td>
+                        <td><span class="pill @Fa.StatusClass(t.Status)"><span class="dot"></span>@Fa.Status(t.Status)</span></td>
+                        <td class="small text-nowrap">
+                            @Fa.Date(t.Deadline)
+                            @if (due is { } d && d.Cls is "late" or "today" or "soon") { <div class="due @d.Cls">@d.Text</div> }
+                        </td>
+                        <td class="small text-nowrap">@Fa.HoursShort(t.TotalHours)<div class="text-muted">@Fa.N(t.WorkedDays) روز</div></td>
+                        <td class="small text-muted text-nowrap">@Fa.Stamp(t.CompletedAt)</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

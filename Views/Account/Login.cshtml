@@ -1,0 +1,75 @@
+@model LoginVm
+@{
+    ViewData["Title"] = "ورود";
+    ViewData["Bare"] = true;
+    var demo = new[]
+    {
+        ("peyman", "پیمان", "تیم‌لید", 1), ("behnia", "بهنیا", "عضو تیم", 2), ("mehrdad", "مهرداد", "عضو تیم", 3),
+        ("mojtaba", "مجتبی", "عضو تیم", 4), ("hassan", "عمو حسن", "کارشناس", 5)
+    };
+}
+
+<div class="auth">
+    <div class="auth-art d-flex">
+        <div class="logo" style="color:#fff">
+            <span class="logo-mark" style="background:rgba(255,255,255,.2);box-shadow:none">@Ui.Icon("check", 18)</span> تیم‌ترکر
+        </div>
+        <div style="position:relative;z-index:1">
+            <h2>تسک بده،<br />تیک بگیر،<br />تأیید کن.</h2>
+            <p style="opacity:.85;max-width:400px">هر عضو تیم کارتش رو می‌کشه، با تایمر ساعتش رو ثبت می‌کنه و آخر کار تیک می‌زنه. تیم‌لید زنده می‌بینه، تأیید می‌کنه و تسک قفل می‌شه.</p>
+            <div class="mock mt-4">
+                <div><span class="t on">@Ui.Icon("check", 12)</span> <s style="opacity:.8">طراحی صفحه‌ی ورود</s> <small class="ms-auto">تأیید شد</small></div>
+                <div><span class="t wait">@Ui.Icon("hourglass", 11)</span> اعتبارسنجی فرم‌ها <small class="ms-auto">منتظر تأیید</small></div>
+                <div><span class="t"></span> برد کانبان با درگ‌اند‌دراپ <small class="ms-auto"><i class="pulse light"></i> در حال کار</small></div>
+            </div>
+        </div>
+        <small style="opacity:.7;position:relative;z-index:1">ASP.NET Core MVC · SignalR</small>
+    </div>
+
+    <div class="auth-form">
+        <div class="auth-card">
+            <h1 class="page-title mb-1">خوش اومدی 👋</h1>
+            <p class="page-sub mb-4">برای ادامه وارد حسابت شو</p>
+
+            <form asp-action="Login" method="post" id="loginForm">
+                <div asp-validation-summary="ModelOnly" class="text-danger small mb-2"></div>
+                <input type="hidden" asp-for="ReturnUrl" />
+                <div class="mb-3">
+                    <label asp-for="Username" class="form-label"></label>
+                    <input asp-for="Username" class="form-control" dir="ltr" autofocus autocomplete="username" />
+                    <span asp-validation-for="Username" class="text-danger small"></span>
+                </div>
+                <div class="mb-4">
+                    <label asp-for="Password" class="form-label"></label>
+                    <input asp-for="Password" class="form-control" dir="ltr" autocomplete="current-password" />
+                    <span asp-validation-for="Password" class="text-danger small"></span>
+                </div>
+                <button class="btn btn-brand w-100 btn-lg">ورود</button>
+            </form>
+
+            <div class="mt-4">
+                <div class="small text-muted mb-2">ورود سریع با حساب‌های نمونه (رمز همه: ۱۲۳۴)</div>
+                <div class="demo-users">
+                    @foreach (var d in demo)
+                    {
+                        <button type="button" data-u="@d.Item1">
+                            @Ui.Avatar(d.Item2, d.Item4, "sm")
+                            <span><b class="d-block">@d.Item2</b><small class="text-muted">@d.Item3</small></span>
+                        </button>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.querySelectorAll('.demo-users button').forEach(b => b.addEventListener('click', () => {
+            document.getElementById('Username').value = b.dataset.u;
+            document.getElementById('Password').value = '1234';
+            document.getElementById('loginForm').submit();
+        }));
+    </script>
+}

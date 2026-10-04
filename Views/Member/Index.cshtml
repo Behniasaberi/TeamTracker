@@ -1,0 +1,63 @@
+@model BoardVm
+@{
+    ViewData["Title"] = "برد من";
+    var tasks = Model.Tasks;
+    var open = tasks.Count(t => t.IsOpen);
+    var hour = Model.Now.Hour;
+    var greet = hour < 12 ? "صبح بخیر" : hour < 17 ? "روز بخیر" : "عصر بخیر";
+    var weekStart = TaskService.WeekStart(Model.Now);
+    var weekHours = tasks.SelectMany(t => t.WorkLogs).Where(l => l.Date >= weekStart).Sum(l => l.Hours);
+    var todayHours = tasks.SelectMany(t => t.WorkLogs).Where(l => l.Date == Model.Now.Date).Sum(l => l.Hours);
+    var rejected = tasks.Count(t => t.WasRejected);
+    var running = tasks.FirstOrDefault(t => t.IsTimerRunning);
+}
+
+<div class="page-head">
+    <div>
+        <h1 class="page-title">@greet، @User.Identity!.Name <span class="hello-wave">👋</span></h1>
+        <div class="page-sub">
+            @if (open > 0) { <text>@Fa.N(open) تسک باز داری. کارت‌ها رو بکش و جابه‌جا کن؛ وقتی کاری تموم شد تیکش رو بزن تا برای تأیید بره.</text> }
+            else { <text>همه‌ی کارهات تموم شده. عالیه! 🎉</text> }
+        </div>
+    </div>
+    @if (running is not null)
+    {
+        <a class="running-banner" asp-action="Details" asp-route-id="@running.Id">
+            <i class="pulse"></i> تایمر «@running.Title» روشنه
+        </a>
+    }
+</div>
+
+@if (rejected > 0)
+{
+    <div class="alert-x warn mb-4">@Ui.Icon("undo", 18) <span>@Fa.N(rejected) تسک از طرف تیم‌لید برگشت خورده؛ دلیلش روی کارت نوشته شده.</span></div>
+}
+
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="stat brand"><span class="chip">@Ui.Icon("board", 20)</span>
+            <div class="label">تسک‌های باز</div><div class="value">@Fa.N(open) <small>از @Fa.N(tasks.Count)</small></div></div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="stat review"><span class="chip">@Ui.Icon("hourglass", 20)</span>
+            <div class="label">منتظر تأیید</div><div class="value">@Fa.N(tasks.Count(t => t.Status == WorkStatus.Review))</div></div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="stat ok"><span class="chip">@Ui.Icon("check", 20)</span>
+            <div class="label">تأیید شده</div><div class="value">@Fa.N(tasks.Count(t => t.IsLocked))</div></div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="stat warn"><span class="chip">@Ui.Icon("clock", 20)</span>
+            <div class="label">ساعت این هفته</div><div class="value">@Fa.N(Math.Round(weekHours, 1)) <small>امروز @Fa.N(Math.Round(todayHours, 1))</small></div></div>
+    </div>
+</div>
+
+<partial name="_Board" model="Model" />
+
+@section Modals { <partial name="_MemberModals" model="@("board")" /> }
+
+@section Scripts {
+    <script src="~/lib/sortable/Sortable.min.js"></script>
+    <script src="~/js/jdate.js" asp-append-version="true"></script>
+    <script src="~/js/board.js" asp-append-version="true"></script>
+}

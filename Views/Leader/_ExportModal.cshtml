@@ -1,0 +1,52 @@
+@model (List<AppUser> Members, int? MemberId)
+@{
+    var today = DateTime.Today;
+    var pc = new System.Globalization.PersianCalendar();
+    var monthStart = today.AddDays(1 - pc.GetDayOfMonth(today));
+}
+
+<div class="modal fade" id="exportModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content" method="get" asp-controller="Leader" asp-action="Export" id="exportForm">
+            <div class="modal-header">
+                <span class="modal-icon ok">@Ui.Icon("download", 22)</span>
+                <div>
+                    <h5 class="modal-title fw-bold m-0">خروجی اکسل ساعت کار</h5>
+                    <div class="small text-muted">سه شیت: ریز ساعت‌ها، خلاصه‌ی هر نفر و مشخصات گزارش</div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="بستن"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label">چه کسی؟</label>
+                        <select name="memberId" class="form-select">
+                            <option value="">همه‌ی اعضا</option>
+                            @foreach (var m in Model.Members)
+                            {
+                                <option value="@m.Id" selected="@(Model.MemberId == m.Id)">@m.FullName</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-sm-6">
+                        <label class="form-label">از تاریخ</label>
+                        <input type="date" data-jalali name="from" class="form-control" value="@monthStart.ToString("yyyy-MM-dd")" max="@today.ToString("yyyy-MM-dd")" required />
+                    </div>
+                    <div class="col-sm-6">
+                        <label class="form-label">تا تاریخ</label>
+                        <input type="date" data-jalali name="to" class="form-control" value="@today.ToString("yyyy-MM-dd")" max="@today.ToString("yyyy-MM-dd")" required />
+                    </div>
+                    <div class="col-12 quick-hours js-quick-range">
+                        <button type="button" data-range="month">این ماه</button>
+                        <button type="button" data-range="30">۳۰ روز اخیر</button>
+                        <button type="button" data-range="week">این هفته</button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-ghost" data-bs-dismiss="modal">انصراف</button>
+                <button class="btn btn-done">@Ui.Icon("download", 16) دانلود فایل اکسل</button>
+            </div>
+        </form>
+    </div>
+</div>

@@ -1,0 +1,192 @@
+@model LeaderDashboardVm
+@{
+    ViewData["Title"] = "داشبورد تیم‌لید";
+    var pct = Model.TotalTasks == 0 ? 0 : (int)Math.Round(Model.DoneTasks * 100.0 / Model.TotalTasks);
+}
+
+<div class="page-head">
+    <div>
+        <h1 class="page-title">داشبورد نظارت تیم</h1>
+        <div class="page-sub">هر تیکی که اعضا بزنند همین‌جا منتظر تأیید تو می‌مونه؛ همه‌چیز زنده به‌روز می‌شه.</div>
+    </div>
+    <div class="d-flex gap-2">
+        <button type="button" class="btn btn-ghost" data-bs-toggle="modal" data-bs-target="#exportModal">@Ui.Icon("download", 16) خروجی اکسل</button>
+        <a asp-action="Board" class="btn btn-ghost">@Ui.Icon("board", 16) برد تیم</a>
+        <a asp-action="Create" class="btn btn-brand">@Ui.Icon("plus", 16) تسک جدید</a>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="stat review"><span class="chip">@Ui.Icon("hourglass", 20)</span>
+            <div class="label">منتظر تأیید تو</div><div class="value">@Fa.N(Model.ReviewQueue.Count)</div></div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="stat ok"><span class="chip">@Ui.Icon("check", 20)</span>
+            <div class="label">تأیید شده و قفل</div><div class="value">@Fa.N(Model.DoneTasks) <small>از @Fa.N(Model.TotalTasks) (@Fa.N(pct)٪)</small></div></div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="stat warn"><span class="chip">@Ui.Icon("clock", 20)</span>
+            <div class="label">ساعت کار تیم این هفته</div><div class="value">@Fa.N(Math.Round(Model.WeekHours, 1)) <small>ساعت</small></div></div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="stat danger"><span class="chip">@Ui.Icon("alert", 20)</span>
+            <div class="label">عقب‌افتاده از مهلت</div><div class="value">@Fa.N(Model.OverdueTasks)</div></div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-lg-7">
+        <div class="panel h-100">
+            <div class="panel-title">@Ui.Icon("inbox") منتظر تأیید تو
+                @if (Model.ReviewQueue.Any()) { <span class="badge-count">@Fa.N(Model.ReviewQueue.Count)</span> }
+            </div>
+            @if (!Model.ReviewQueue.Any())
+            {
+                <div class="empty sm">@Ui.Icon("check", 32)<div>صف تأیید خالیه. هر وقت کسی تیک بزنه اینجا میاد.</div></div>
+            }
+            else
+            {
+                <ul class="review-list">
+                    @foreach (var t in Model.ReviewQueue)
+                    {
+                        var who = Model.MemberNames.GetValueOrDefault(t.AssignedToId, "؟");
+                        <li class="review-item" data-id="@t.Id" data-title="@t.Title" data-owner="@who"
+                            data-hours="@Ui.Inv(t.TotalHours)" data-days="@t.WorkedDays" data-note="@t.CompletionNote">
+                            @Ui.Avatar(who, t.AssignedToId)
+                            <div class="flex-grow-1 min-w-0">
+                                <a class="task-link" asp-action="Details" asp-route-id="@t.Id">@t.Title</a>
+                                <div class="small text-muted">
+                                    @who · @Fa.Ago(t.SubmittedAt, Model.Now) · @Fa.Hours(t.TotalHours) در @Fa.N(t.WorkedDays) روز
+                                    @if (t.Checklist.Count > 0) { <text>· چک‌لیست @Fa.N(t.ChecklistDone)/@Fa.N(t.Checklist.Count)</text> }
+                                </div>
+                                @if (!string.IsNullOrWhiteSpace(t.CompletionNote))
+                                {
+                                    <div class="quote">«@t.CompletionNote»</div>
+                                }
+                            </div>
+                            <div class="d-flex gap-2 flex-none">
+                                <button type="button" class="btn btn-ghost btn-sm js-reject" title="برگردون">@Ui.Icon("undo", 15)</button>
+                                <button type="button" class="btn btn-done btn-sm js-approve">@Ui.Icon("check", 15) تأیید</button>
+                            </div>
+                        </li>
+                    }
+                </ul>
+            }
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        <div class="panel h-100">
+            <div class="panel-title">@Ui.Icon("sun") امروز <span class="sub">@Fa.DayMonth(Model.Today)</span></div>
+            <ul class="today-list">
+                @foreach (var m in Model.Members)
+                {
+                    <li>
+                        @Ui.Avatar(m.Member.FullName, m.Member.Id)
+                        <div class="flex-grow-1 min-w-0">
+                            <a class="task-link" asp-action="Member" asp-route-id="@m.Member.Id">@m.Member.FullName</a>
+                            @if (m.RunningTask is not null)
+                            {
+                                <div class="small now-working" data-elapsed="@m.RunningSeconds">
+                                    <i class="pulse"></i> روی «@m.RunningTask.Title» · <b class="js-clock">@Fa.N(TimeSpan.FromSeconds(m.RunningSeconds).ToString(@"hh\:mm\:ss"))</b>
+                                </div>
+                            }
+                            else if (m.TodayHours > 0)
+                            {
+                                <div class="small text-muted">آخرین فعالیت @Fa.Ago(m.LastActivity, Model.Now)</div>
+                            }
+                            else
+                            {
+                                <div class="small text-muted">امروز هنوز ساعتی ثبت نکرده</div>
+                            }
+                        </div>
+                        <span class="today-hours @(m.TodayHours > 0 ? "" : "zero")">@Fa.N(Math.Round(m.TodayHours, 1))<small>ساعت</small></span>
+                    </li>
+                }
+            </ul>
+        </div>
+    </div>
+</div>
+
+<div class="d-flex align-items-center justify-content-between mb-3">
+    <h2 class="h6 fw-bold m-0 d-flex align-items-center gap-2">@Ui.Icon("users") اعضای تیم</h2>
+</div>
+<div class="row g-3 mb-4">
+    @foreach (var m in Model.Members)
+    {
+        <div class="col-md-6 col-xl-3">
+            <div class="member-card">
+                <div class="top">
+                    @Ui.Avatar(m.Member.FullName, m.Member.Id, "lg")
+                    <div class="flex-grow-1 min-w-0">
+                        <a class="name" asp-action="Member" asp-route-id="@m.Member.Id">@m.Member.FullName</a>
+                        <div class="role">@m.Member.JobTitle</div>
+                    </div>
+                    <div class="ring" style="--p:@m.Percent" data-label="@Fa.N(m.Percent)٪" title="درصد تسک‌های تأییدشده"></div>
+                </div>
+                <div class="mini-stats four">
+                    <div><b class="c-todo">@Fa.N(m.NotStarted)</b><span>شروع نشده</span></div>
+                    <div><b class="c-doing">@Fa.N(m.InProgress)</b><span>در حال انجام</span></div>
+                    <div><b class="c-review">@Fa.N(m.Review)</b><span>منتظر تأیید</span></div>
+                    <div><b class="c-done">@Fa.N(m.Done)</b><span>تأیید شده</span></div>
+                </div>
+                <div class="d-flex flex-wrap gap-3 small muted-2">
+                    <span>@Ui.Icon("clock", 15) @Fa.Hours(m.TotalHours)</span>
+                    <span>@Ui.Icon("calendar", 15) @Fa.N(m.WorkedDays) روز کاری</span>
+                    @if (m.Overdue > 0) { <span class="pill late">@Fa.N(m.Overdue) عقب</span> }
+                </div>
+                <div class="foot">
+                    <span>آخرین فعالیت: @Fa.Ago(m.LastActivity, Model.Now)</span>
+                    <a asp-action="Create" asp-route-memberId="@m.Member.Id" class="btn btn-ghost btn-sm">@Ui.Icon("plus", 14) تسک</a>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<partial name="_Widgets" model="Model" />
+
+<div class="row g-4">
+    <div class="col-xl-8">
+        <div class="panel">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                <div class="panel-title m-0">@Ui.Icon("grid") همه‌ی تسک‌ها</div>
+                <form method="get" class="d-flex gap-2">
+                    <select name="memberId" class="form-select form-select-sm" onchange="this.form.submit()" aria-label="فیلتر نفر">
+                        <option value="">همه‌ی افراد</option>
+                        @foreach (var m in Model.Members)
+                        {
+                            <option value="@m.Member.Id" selected="@(Model.FilterMemberId == m.Member.Id)">@m.Member.FullName</option>
+                        }
+                    </select>
+                    <select name="status" class="form-select form-select-sm" onchange="this.form.submit()" aria-label="فیلتر وضعیت">
+                        <option value="">همه‌ی وضعیت‌ها</option>
+                        @foreach (var s in Enum.GetValues<WorkStatus>())
+                        {
+                            <option value="@s" selected="@(Model.FilterStatus == s)">@Fa.Status(s)</option>
+                        }
+                    </select>
+                </form>
+            </div>
+            <partial name="_TaskTable" model="Model" />
+        </div>
+    </div>
+
+    <div class="col-xl-4">
+        <div class="panel">
+            <div class="panel-title">@Ui.Icon("activity") آخرین فعالیت‌ها</div>
+            <partial name="_Timeline" model="Model.RecentActivity" />
+        </div>
+    </div>
+</div>
+
+@section Modals {
+    <partial name="_LeaderModals" model="@("index")" />
+    <partial name="_ExportModal" model="(Model.Members.Select(m => m.Member).ToList(), (int?)null)" />
+}
+
+@section Scripts {
+    <script src="~/js/jdate.js" asp-append-version="true"></script>
+    <script src="~/js/board.js" asp-append-version="true"></script>
+}

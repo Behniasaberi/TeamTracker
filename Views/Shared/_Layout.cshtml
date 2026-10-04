@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <title>@ViewData["Title"] | تیم‌ترکر</title>
+    @* تم قبل از رندر صفحه اعمال شود تا صفحه چشمک نزند *@
+    <script>
+        (function () {
+            var t = null;
+            try { t = localStorage.getItem('tt-theme'); } catch (e) { }
+            if (!t) t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            document.documentElement.dataset.theme = t;
+        })();
+    </script>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.rtl.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+@{
+    var bare = ViewData["Bare"] as bool? == true;
+    var authed = User.Identity?.IsAuthenticated == true;
+    var isLeader = User.IsInRole(Roles.Leader);
+    var userId = authed ? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value : "";
+    var ctrl = ViewContext.RouteData.Values["controller"]?.ToString();
+    var act = ViewContext.RouteData.Values["action"]?.ToString();
+    string Active(string c, string a) => ctrl == c && act == a ? "active" : "";
+}
+<body data-user="@userId" data-role="@(isLeader ? "leader" : "member")">
+    @if (!bare && authed)
+    {
+        <header class="topbar">
+            <div class="container inner">
+                <a class="logo" asp-controller="Home" asp-action="Index">
+                    <span class="logo-mark">@Ui.Icon("check", 18)</span>
+                    <span class="d-none d-md-inline">تیم‌ترکر</span>
+                </a>
+                <ul class="nav-pills-x">
+                    @if (isLeader)
+                    {
+                        <li><a class="@Active("Leader", "Index")" asp-controller="Leader" asp-action="Index">@Ui.Icon("grid", 17)<span>داشبورد</span></a></li>
+                        <li><a class="@Active("Leader", "Board")" asp-controller="Leader" asp-action="Board">@Ui.Icon("board", 17)<span>برد تیم</span></a></li>
+                        <li><a class="@Active("Leader", "Team")" asp-controller="Leader" asp-action="Team">@Ui.Icon("users", 17)<span>اعضا</span></a></li>
+                        <li><a class="@Active("Leader", "Create")" asp-controller="Leader" asp-action="Create">@Ui.Icon("plus", 17)<span>تسک جدید</span></a></li>
+                    }
+                    else
+                    {
+                        <li><a class="@Active("Member", "Index")" asp-controller="Member" asp-action="Index">@Ui.Icon("board", 17)<span>برد من</span></a></li>
+                    }
+                </ul>
+                <div class="me">
+                    <span class="live-dot" id="liveDot" title="در حال اتصال…"><i></i><span>زنده</span></span>
+                    <button type="button" class="icon-btn js-theme" title="تغییر تم روشن/تاریک" aria-label="تغییر تم">
+                        <span class="only-light">@Ui.Icon("moon", 17)</span>
+                        <span class="only-dark">@Ui.Icon("sun", 17)</span>
+                    </button>
+                    <div id="live-bell">@await Component.InvokeAsync("NotificationBell")</div>
+                    <a class="me-link" asp-controller="Account" asp-action="Profile" title="پروفایل من">
+                    @Ui.Avatar(User.Identity!.Name!, int.Parse(userId))
+                    <div class="who">
+                        <b>@User.Identity.Name</b>
+                        <small>@(User.FindFirst("JobTitle")?.Value is { Length: > 0 } job ? job : isLeader ? "تیم‌لید" : "عضو تیم")</small>
+                    </div>
+                    </a>
+                    <form asp-controller="Account" asp-action="Logout" method="post" class="m-0">
+                        <button class="icon-btn danger" title="خروج" aria-label="خروج">@Ui.Icon("logout", 17)</button>
+                    </form>
+                </div>
+            </div>
+        </header>
+    }
+
+    @if (bare)
+    {
+        @RenderBody()
+    }
+    else
+    {
+        @* محتوای این بخش با پیام‌های زنده (SignalR) بدون رفرش صفحه جایگزین می‌شود *@
+        <main class="container py-4 pb-5" id="live-root">@RenderBody()</main>
+    }
+
+    @await RenderSectionAsync("Modals", required: false)
+
+    <div class="toast-stack" id="toasts"
+         data-ok="@(TempData["Success"] as string)"
+         data-err="@(TempData["Error"] as string)"></div>
+    <canvas id="confetti" aria-hidden="true"></canvas>
+    @Html.AntiForgeryToken()
+
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @if (authed && !bare)
+    {
+        <script src="~/lib/signalr/signalr.min.js"></script>
+        <script src="~/js/live.js" asp-append-version="true"></script>
+    }
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>
