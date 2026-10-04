@@ -15,6 +15,5 @@ ENV ASPNETCORE_URLS=http://+:8080 \
     ASPNETCORE_ENVIRONMENT=Production \
     Demo__DailyReset=true
 
-VOLUME /app/App_Data
 EXPOSE 8080
 ENTRYPOINT ["dotnet", "TeamTracker.dll"]
